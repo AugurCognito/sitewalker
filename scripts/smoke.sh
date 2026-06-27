@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# smoke.sh — run sitewalker against a few real sites and validate the output.
+# smoke.sh — run sitestash against a few real sites and validate the output.
 #
 # These are live-network integration checks (slow, polite, bounded), NOT unit
 # tests — they are intentionally kept out of `pnpm test`/CI. Run on demand:

@@ -8,11 +8,11 @@ import { writeSiteMap } from './sitemap.js';
 
 const DEFAULT_OUT = './output';
 
-const USAGE = `sitewalker — mirror a whole site into self-contained, offline-browsable pages.
+const USAGE = `sitestash — mirror a whole site into self-contained, offline-browsable pages.
 
 Usage:
-  sitewalker <url> [options]      Crawl a site into ${DEFAULT_OUT}/
-  sitewalker serve [dir]          Serve a previous crawl over HTTP (dir: ${DEFAULT_OUT})
+  sitestash <url> [options]      Crawl a site into ${DEFAULT_OUT}/
+  sitestash serve [dir]          Serve a previous crawl over HTTP (dir: ${DEFAULT_OUT})
 
 Crawl options:
   -o, --out <dir>        Output directory          (default: ${DEFAULT_OUT})
@@ -101,7 +101,7 @@ async function runCrawl(target: string, values: CliValues): Promise<void> {
 
   const startedAt = Date.now();
   const generatedAt = new Date().toISOString();
-  console.log(`sitewalker → ${start.toString()}`);
+  console.log(`sitestash → ${start.toString()}`);
   console.log(`output    → ${outDir}\n`);
 
   const results = await crawl({
@@ -131,7 +131,7 @@ async function runCrawl(target: string, values: CliValues): Promise<void> {
     await startViewer(outDir, values.port, Boolean(values.open));
   } else {
     console.log(`Open ${path.join(outDir, 'index.html')}`);
-    console.log(`Or run: sitewalker serve ${path.relative(process.cwd(), outDir) || '.'} --open`);
+    console.log(`Or run: sitestash serve ${path.relative(process.cwd(), outDir) || '.'} --open`);
     if (failed) process.exitCode = 1;
   }
 }

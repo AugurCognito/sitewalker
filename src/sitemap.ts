@@ -55,7 +55,7 @@ export async function writeSiteMap(
 
   const index = `<!doctype html>
 <meta charset="utf-8">
-<title>sitewalker — ${escapeHtml(startUrl)}</title>
+<title>sitestash — ${escapeHtml(startUrl)}</title>
 <style>body{font:15px/1.5 system-ui,sans-serif;max-width:60rem;margin:2rem auto;padding:0 1rem}small{color:#888}h2{margin-top:2rem}</style>
 <h1>${escapeHtml(startUrl)}</h1>
 <p>${ok.length} pages captured${errors.length ? ` · ${errors.length} errors` : ''} · ${escapeHtml(generatedAt)}</p>
