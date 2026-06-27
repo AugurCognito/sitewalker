@@ -4,8 +4,8 @@ name: Publish to npm
 # One-time bootstrap required first (npm cannot trust-publish a package that does
 # not exist yet):
 #   1. `npm login` && `npm publish --access public`  (claims the name)
-#   2. npmjs.com -> sitewalker -> Settings -> Trusted Publisher:
-#        repository: AugurCognito/sitewalker   workflow: publish.yml
+#   2. npmjs.com -> sitestash -> Settings -> Trusted Publisher:
+#        repository: AugurCognito/sitestash   workflow: publish.yml
 # After that, publishing a GitHub Release runs this workflow with provenance.
 
 on:

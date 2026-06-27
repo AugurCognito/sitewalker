@@ -1,4 +1,4 @@
-# sitewalker
+# sitestash
 
 Point it at a URL. Get back a **faithful, offline-browsable copy of the whole site** —
 one self-contained `.html` per page (all CSS, images and fonts inlined), internal links
@@ -9,8 +9,8 @@ site exactly as it is so the rebuild team has a pixel-faithful, clickable refere
 **static sites and JavaScript/SPA sites alike** (pages are rendered in a real browser before saving).
 
 ```bash
-sitewalker https://client-site.com      # crawl → ./output/
-sitewalker serve --open                  # browse ./output/ in your browser
+sitestash https://client-site.com      # crawl → ./output/
+sitestash serve --open                  # browse ./output/ in your browser
 
 # ./output/
 #   index.html        ← browsable table of contents
@@ -47,15 +47,25 @@ SingleFile *has* a built-in crawler, but two parts of it are unreliable (verifie
   find/replace of the original URL; trailing-slash normalization makes it miss almost
   everything (0 of ~1400 links rewritten on a real site).
 
-So sitewalker owns discovery, fan-out, deterministic file naming and **URL-aware** link
+So sitestash owns discovery, fan-out, deterministic file naming and **URL-aware** link
 rewriting, and uses SingleFile purely as a rock-solid single-page capture engine.
 
 ## Install
 
 ```bash
+# run without installing
+npx sitestash https://example.com
+
+# or install the CLI globally
+npm i -g sitestash      # then: sitestash https://example.com
+```
+
+From source (for development):
+
+```bash
 pnpm install       # installs single-file-cli (it auto-detects your local Chrome)
 pnpm build
-pnpm link --global # optional: makes `sitewalker` available globally
+pnpm link --global # optional: makes `sitestash` available globally
 ```
 
 Requires **Node ≥ 20** and a Chrome/Chromium install on the machine.
@@ -64,16 +74,16 @@ Requires **Node ≥ 20** and a Chrome/Chromium install on the machine.
 
 ```bash
 # whole site, default settings
-sitewalker https://example.com
+sitestash https://example.com
 
 # limit depth, slow down, custom output dir
-sitewalker https://example.com --depth 2 --delay 500 --out ./snapshot
+sitestash https://example.com --depth 2 --delay 500 --out ./snapshot
 
 # faster, text-focused capture
-sitewalker https://example.com --block-images --concurrency 6
+sitestash https://example.com --block-images --concurrency 6
 ```
 
-Run `sitewalker --help` for all options. During development, `pnpm dev <url> [opts]`
+Run `sitestash --help` for all options. During development, `pnpm dev <url> [opts]`
 (pnpm forwards args directly — no `--` separator needed).
 
 ## Development
@@ -120,11 +130,11 @@ the site map. It needs Chrome and hits the network, so it is **not** run in CI:
 
 ## License
 
-sitewalker's own code is licensed under the [MIT License](LICENSE).
+sitestash's own code is licensed under the [MIT License](LICENSE).
 
 > [!IMPORTANT]
-> sitewalker depends on [`single-file-cli`](https://github.com/gildas-lormeau/single-file-cli),
+> sitestash depends on [`single-file-cli`](https://github.com/gildas-lormeau/single-file-cli),
 > which is licensed under **AGPL-3.0**. We invoke it as a **separate process** and do not
-> bundle, link, or modify its source — so sitewalker itself can be MIT. However, if you
+> bundle, link, or modify its source — so sitestash itself can be MIT. However, if you
 > **redistribute** single-file-cli alongside this tool, or expose it as a **network service**,
 > AGPL-3.0 obligations apply to that component. `cheerio` is MIT.
