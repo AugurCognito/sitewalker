@@ -104,3 +104,27 @@ Git hooks are installed on `pnpm install`: **pre-commit** runs Biome on staged f
 - **Concurrency spawns one browser per worker.** Lower `--concurrency` on constrained machines.
 - Only `<a href>` links are rewritten for offline use; assets are already inlined, so they
   need no rewriting.
+
+## Testing
+
+`pnpm check` (Biome + strict tsc) runs in CI on every push and PR.
+
+`scripts/smoke.sh` is a live-network integration check that crawls a few
+scrape-friendly sandbox sites (toscrape.com, example.com) and validates the
+output — page counts, asset inlining, offline link rewriting, JS rendering, and
+the site map. It needs Chrome and hits the network, so it is **not** run in CI:
+
+```bash
+./scripts/smoke.sh
+```
+
+## License
+
+sitewalker's own code is licensed under the [MIT License](LICENSE).
+
+> [!IMPORTANT]
+> sitewalker depends on [`single-file-cli`](https://github.com/gildas-lormeau/single-file-cli),
+> which is licensed under **AGPL-3.0**. We invoke it as a **separate process** and do not
+> bundle, link, or modify its source — so sitewalker itself can be MIT. However, if you
+> **redistribute** single-file-cli alongside this tool, or expose it as a **network service**,
+> AGPL-3.0 obligations apply to that component. `cheerio` is MIT.

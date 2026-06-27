@@ -2,6 +2,22 @@
   "name": "sitewalker",
   "version": "0.1.0",
   "description": "Zero-config site mirror: sitemap-first crawl, faithful self-contained pages (JS/SPA aware), offline link rewriting, and a site-map graph.",
+  "license": "MIT",
+  "author": "Aniket Singh",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AugurCognito/sitewalker.git"
+  },
+  "keywords": [
+    "crawler",
+    "scraper",
+    "website-mirror",
+    "offline",
+    "archive",
+    "sitemap",
+    "single-file",
+    "spa"
+  ],
   "type": "module",
   "packageManager": "pnpm@9.15.0",
   "engines": {
