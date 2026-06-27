@@ -1,5 +1,9 @@
 # sitestash
 
+[![npm version](https://img.shields.io/npm/v/sitestash.svg)](https://www.npmjs.com/package/sitestash)
+[![CI](https://github.com/AugurCognito/sitestash/actions/workflows/ci.yml/badge.svg)](https://github.com/AugurCognito/sitestash/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/sitestash.svg)](LICENSE)
+
 Point it at a URL. Get back a **faithful, offline-browsable copy of the whole site** —
 one self-contained `.html` per page (all CSS, images and fonts inlined), internal links
 rewritten to work offline, plus a `site-map.json` graph of how the pages connect.
