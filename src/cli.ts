@@ -2,7 +2,8 @@
 import { mkdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { crawl } from './crawl.js';
+import type { CaptureOptions } from './capture.js';
+import { crawl, type PageResult } from './crawl.js';
 import { openBrowser, serve } from './serve.js';
 import { writeSiteMap } from './sitemap.js';
 
@@ -22,9 +23,11 @@ Crawl options:
       --max-pages <n>    Safety cap on pages       (default: 5000)
       --wait-until <s>   Page-ready signal: networkIdle|load|domContentLoaded
                                                    (default: networkIdle)
-      --block-images     Skip images (faster, smaller files)
-      --serve            Start the viewer server when the crawl finishes
-  -h, --help             Show this help
+      --block-images       Skip images (faster, smaller files)
+      --markdown           Also write a clean .md of each page (AI reference)
+      --include-subdomains Follow all subdomains (e.g. blog.x.com), not just www
+      --serve              Start the viewer server when the crawl finishes
+  -h, --help               Show this help
 
 Serve options (also apply to --serve):
       --port <n>         Port to listen on         (default: 8080)
@@ -44,6 +47,8 @@ interface CliValues {
   'max-pages'?: string;
   'wait-until'?: string;
   'block-images'?: boolean;
+  markdown?: boolean;
+  'include-subdomains'?: boolean;
   serve?: boolean;
   port?: string;
   open?: boolean;
@@ -86,16 +91,39 @@ async function startViewer(dir: string, portStr: string | undefined, open: boole
   }
 }
 
-async function runCrawl(target: string, values: CliValues): Promise<void> {
-  let start: URL;
+function parseStartUrl(target: string): URL {
   try {
-    start = new URL(target);
-    if (start.protocol !== 'http:' && start.protocol !== 'https:') throw new Error();
+    const url = new URL(target);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error();
+    return url;
   } catch {
     console.error(`Invalid URL: ${target}`);
     process.exit(1);
   }
+}
 
+async function reportAndServe(
+  results: PageResult[],
+  outDir: string,
+  startedAt: number,
+  values: CliValues,
+): Promise<void> {
+  const ok = results.filter((r) => r.status === 'ok').length;
+  const failed = results.length - ok;
+  const secs = ((Date.now() - startedAt) / 1000).toFixed(1);
+  console.log(`\nDone: ${ok} pages${failed ? `, ${failed} errors` : ''} in ${secs}s`);
+
+  if (values.serve) {
+    await startViewer(outDir, values.port, Boolean(values.open));
+    return;
+  }
+  console.log(`Open ${path.join(outDir, 'index.html')}`);
+  console.log(`Or run: sitestash serve ${path.relative(process.cwd(), outDir) || '.'} --open`);
+  if (failed) process.exitCode = 1;
+}
+
+async function runCrawl(target: string, values: CliValues): Promise<void> {
+  const start = parseStartUrl(target);
   const outDir = path.resolve(values.out ?? DEFAULT_OUT);
   await mkdir(outDir, { recursive: true });
 
@@ -104,6 +132,13 @@ async function runCrawl(target: string, values: CliValues): Promise<void> {
   console.log(`sitestash → ${start.toString()}`);
   console.log(`output    → ${outDir}\n`);
 
+  const capture: CaptureOptions = {
+    waitUntil: values['wait-until'] ?? 'networkIdle',
+    loadMaxTime: 60000,
+    blockImages: Boolean(values['block-images']),
+    extraArgs: [],
+  };
+
   const results = await crawl({
     startUrl: start.toString(),
     outDir,
@@ -111,29 +146,14 @@ async function runCrawl(target: string, values: CliValues): Promise<void> {
     concurrency: parseIntOpt(values.concurrency, 'concurrency', 4),
     delayMs: parseIntOpt(values.delay, 'delay', 0),
     maxPages: parseIntOpt(values['max-pages'], 'max-pages', 5000),
-    capture: {
-      waitUntil: values['wait-until'] ?? 'networkIdle',
-      loadMaxTime: 60000,
-      blockImages: Boolean(values['block-images']),
-      extraArgs: [],
-    },
+    markdown: Boolean(values.markdown),
+    includeSubdomains: Boolean(values['include-subdomains']),
+    capture,
     log: (m) => console.log(m),
   });
 
   await writeSiteMap(results, outDir, start.toString(), generatedAt);
-
-  const ok = results.filter((r) => r.status === 'ok').length;
-  const failed = results.length - ok;
-  const secs = ((Date.now() - startedAt) / 1000).toFixed(1);
-  console.log(`\nDone: ${ok} pages${failed ? `, ${failed} errors` : ''} in ${secs}s`);
-
-  if (values.serve) {
-    await startViewer(outDir, values.port, Boolean(values.open));
-  } else {
-    console.log(`Open ${path.join(outDir, 'index.html')}`);
-    console.log(`Or run: sitestash serve ${path.relative(process.cwd(), outDir) || '.'} --open`);
-    if (failed) process.exitCode = 1;
-  }
+  await reportAndServe(results, outDir, startedAt, values);
 }
 
 async function main(): Promise<void> {
@@ -147,6 +167,9 @@ async function main(): Promise<void> {
       'max-pages': { type: 'string' },
       'wait-until': { type: 'string' },
       'block-images': { type: 'boolean' },
+      markdown: { type: 'boolean' },
+      'include-subdomains': { type: 'boolean' },
+      'shared-browser': { type: 'boolean' },
       serve: { type: 'boolean' },
       port: { type: 'string' },
       open: { type: 'boolean' },

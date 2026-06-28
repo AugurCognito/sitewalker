@@ -80,5 +80,25 @@
       "semicolons": "always",
       "trailingCommas": "all"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.config.*"],
+      "linter": { "rules": { "style": { "noDefaultExport": "off" } } }
+    },
+    {
+      "includes": ["src/browser.ts"],
+      "linter": { "rules": { "security": { "noSecrets": "off" } } }
+    },
+    {
+      "includes": ["test/**"],
+      "linter": {
+        "rules": {
+          "style": { "useNamingConvention": "off" },
+          "suspicious": { "noEmptyBlockStatements": "off" },
+          "security": { "noSecrets": "off" }
+        }
+      }
+    }
+  ]
 }

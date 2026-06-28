@@ -85,6 +85,9 @@ sitestash https://example.com --depth 2 --delay 500 --out ./snapshot
 
 # faster, text-focused capture
 sitestash https://example.com --block-images --concurrency 6
+
+# also emit clean markdown per page (AI reference), and follow subdomains
+sitestash https://example.com --markdown --include-subdomains
 ```
 
 Run `sitestash --help` for all options. During development, `pnpm dev <url> [opts]`
@@ -109,8 +112,9 @@ Git hooks are installed on `pnpm install`: **pre-commit** runs Biome on staged f
 
 ## Known limitations (v1)
 
-- **Same hostname only.** `www.x.com` and `x.com` are treated as different sites;
-  subdomains are not followed.
+- **Scope = apex + www by default.** `x.com` and `www.x.com` are crawled together. Pass
+  `--include-subdomains` to also follow `blog.x.com`, `shop.x.com`, etc. Other domains are
+  never followed.
 - **Each captured page is a frozen snapshot.** Client-side interactivity that depends on
   live network calls won't work offline (the *rendered* state is preserved, which is what a
   migration reference needs). For interactive replay of complex SPAs, use

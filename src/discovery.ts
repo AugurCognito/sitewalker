@@ -1,4 +1,4 @@
-import { normalizeUrl, sameHost } from './urls.js';
+import { inScope, normalizeUrl, type SiteScope } from './urls.js';
 
 async function fetchText(url: string, timeoutMs = 15000): Promise<string | null> {
   const controller = new AbortController();
@@ -35,22 +35,22 @@ async function findSitemapEntrypoints(origin: string): Promise<string[]> {
   return entrypoints;
 }
 
-/** Fetch one sitemap and split it into nested sitemaps and same-host page URLs. */
+/** Fetch one sitemap and split it into nested sitemaps and in-scope page URLs. */
 async function readSitemap(
   sm: string,
-  host: string,
+  scope: SiteScope,
 ): Promise<{ nested: string[]; pages: string[] }> {
   const xml = await fetchText(sm);
   if (!xml) return { nested: [], pages: [] };
   const { sitemaps, urls } = parseSitemapXml(xml);
   const pages = urls
     .map((u) => normalizeUrl(u))
-    .filter((u): u is string => u !== null && sameHost(u, host));
+    .filter((u): u is string => u !== null && inScope(u, scope));
   return { nested: sitemaps, pages };
 }
 
-/** Walk sitemap entrypoints (expanding indexes) into same-host page URLs. */
-async function collectSitemapUrls(entrypoints: string[], host: string): Promise<Set<string>> {
+/** Walk sitemap entrypoints (expanding indexes) into in-scope page URLs. */
+async function collectSitemapUrls(entrypoints: string[], scope: SiteScope): Promise<Set<string>> {
   const seen = new Set<string>();
   const urls = new Set<string>();
   const queue = [...entrypoints];
@@ -60,7 +60,7 @@ async function collectSitemapUrls(entrypoints: string[], host: string): Promise<
     if (sm === undefined || seen.has(sm)) continue;
     seen.add(sm);
 
-    const { nested, pages } = await readSitemap(sm, host);
+    const { nested, pages } = await readSitemap(sm, scope);
     for (const n of nested) if (!seen.has(n)) queue.push(n);
     for (const p of pages) urls.add(p);
   }
@@ -74,11 +74,11 @@ async function collectSitemapUrls(entrypoints: string[], host: string): Promise<
  */
 export async function discoverSitemapUrls(
   origin: string,
-  host: string,
+  scope: SiteScope,
   log: (m: string) => void,
 ): Promise<string[]> {
   const entrypoints = await findSitemapEntrypoints(origin);
-  const urls = await collectSitemapUrls(entrypoints, host);
+  const urls = await collectSitemapUrls(entrypoints, scope);
   log(
     urls.size ? `sitemap: ${urls.size} URLs discovered` : 'sitemap: none found — crawling by links',
   );
