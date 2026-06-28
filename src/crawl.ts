@@ -3,7 +3,16 @@ import path from 'node:path';
 import { type CaptureOptions, capturePage } from './capture.js';
 import { discoverSitemapUrls } from './discovery.js';
 import { extractLinks, getTitle, rewriteLinks } from './extract.js';
-import { isProbablyPage, normalizeUrl, relHref, sameHost, urlToRelPath } from './urls.js';
+import { htmlToMarkdown } from './markdown.js';
+import {
+  inScope,
+  isProbablyPage,
+  normalizeUrl,
+  relHref,
+  type SiteScope,
+  siteScope,
+  urlToRelPath,
+} from './urls.js';
 
 export interface CrawlConfig {
   startUrl: string;
@@ -16,6 +25,10 @@ export interface CrawlConfig {
   delayMs: number;
   /** Hard safety cap on pages captured. */
   maxPages: number;
+  /** Also write a clean markdown rendition of each page (AI reference). */
+  markdown: boolean;
+  /** Follow every subdomain of the registrable domain, not just apex/www. */
+  includeSubdomains: boolean;
   capture: CaptureOptions;
   log: (m: string) => void;
 }
@@ -39,7 +52,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function crawl(cfg: CrawlConfig): Promise<PageResult[]> {
   const start = new URL(cfg.startUrl);
-  const host = start.hostname;
+  const scope: SiteScope = siteScope(cfg.startUrl, cfg.includeSubdomains);
 
   const queued = new Set<string>();
   const results = new Map<string, PageResult>();
@@ -49,7 +62,7 @@ export async function crawl(cfg: CrawlConfig): Promise<PageResult[]> {
     if (depth > cfg.maxDepth || queued.size >= cfg.maxPages) return;
     const n = normalizeUrl(rawUrl);
     if (!n || queued.has(n)) return;
-    if (!sameHost(n, host) || !isProbablyPage(n)) return;
+    if (!inScope(n, scope) || !isProbablyPage(n)) return;
     queued.add(n);
     queue.push({ url: n, depth });
   }
@@ -76,7 +89,10 @@ export async function crawl(cfg: CrawlConfig): Promise<PageResult[]> {
     }
 
     const html = await readFile(outFile, 'utf-8');
-    const links = extractLinks(html, item.url).filter((l) => sameHost(l, host));
+    if (cfg.markdown) {
+      await writeFile(outFile.replace(/\.html?$/i, '.md'), htmlToMarkdown(html));
+    }
+    const links = extractLinks(html, item.url).filter((l) => inScope(l, scope));
     results.set(item.url, {
       url: item.url,
       file: rel,
@@ -90,7 +106,7 @@ export async function crawl(cfg: CrawlConfig): Promise<PageResult[]> {
 
   // Seed: the start URL, plus everything in the sitemap (depth 0).
   enqueue(start.toString(), 0);
-  for (const u of await discoverSitemapUrls(start.origin, host, cfg.log)) {
+  for (const u of await discoverSitemapUrls(start.origin, scope, cfg.log)) {
     enqueue(u, 0);
   }
 

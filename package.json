@@ -1,6 +1,6 @@
 {
   "name": "sitestash",
-  "version": "0.1.1",
+  "version": "0.3.0",
   "description": "Zero-config site mirror: sitemap-first crawl, faithful self-contained pages (JS/SPA aware), offline link rewriting, and a site-map graph.",
   "license": "MIT",
   "author": "Aniket Singh",
@@ -35,14 +35,15 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
-    "check": "biome ci . && tsc --noEmit",
+    "test": "vitest run",
+    "check": "biome ci . && tsc --noEmit && vitest run",
     "prepublishOnly": "pnpm build",
     "preinstall": "npx only-allow pnpm",
     "prepare": "simple-git-hooks"
@@ -53,13 +54,17 @@
   },
   "dependencies": {
     "cheerio": "^1.0.0",
-    "single-file-cli": "^2.0.83"
+    "single-file-cli": "^2.0.83",
+    "tldts": "^6.1.0",
+    "turndown": "^7.2.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.4",
     "@types/node": "^22.10.0",
+    "@types/turndown": "^5.0.5",
     "simple-git-hooks": "2.12.1",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
   }
 }

@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { getDomain } from 'tldts';
 
 // Extensions that are never crawlable HTML pages (assets, media, documents).
 const ASSET_EXT =
@@ -29,6 +30,44 @@ export function sameHost(target: string, host: string): boolean {
   } catch {
     return false;
   }
+}
+
+const stripWww = (host: string): string => host.replace(/^www\./i, '');
+
+export interface SiteScope {
+  /** apex/www-normalized start host, e.g. "alvera.ai". */
+  base: string;
+  includeSubdomains: boolean;
+  /** registrable domain (eTLD+1) when following subdomains, else null. */
+  domain: string | null;
+}
+
+/** Build the crawl scope from the start URL. */
+export function siteScope(startUrl: string, includeSubdomains: boolean): SiteScope {
+  const host = new URL(startUrl).hostname.toLowerCase();
+  return {
+    base: stripWww(host),
+    includeSubdomains,
+    domain: includeSubdomains ? getDomain(host) : null,
+  };
+}
+
+/**
+ * Is `target` part of the site being crawled?
+ * Default: same host treating `www.` and the apex as one (e.g. alvera.ai ⇆
+ * www.alvera.ai). With includeSubdomains: any host under the registrable domain.
+ */
+export function inScope(target: string, scope: SiteScope): boolean {
+  let host: string;
+  try {
+    host = new URL(target).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  if (scope.includeSubdomains && scope.domain) {
+    return host === scope.domain || host.endsWith(`.${scope.domain}`);
+  }
+  return stripWww(host) === scope.base;
 }
 
 /** Heuristic: does this URL look like an HTML page (not an asset/download)? */
