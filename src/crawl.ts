@@ -69,7 +69,7 @@ export async function crawl(cfg: CrawlConfig): Promise<PageResult[]> {
 
   // Capture one page, record the result, and enqueue its same-host links.
   async function captureAndRecord(item: QueueItem, label: number): Promise<void> {
-    const rel = urlToRelPath(item.url);
+    const rel = urlToRelPath(item.url, cfg.capture.externalAssets);
     const outFile = path.join(cfg.outDir, rel);
     cfg.log(`[${label}] depth ${item.depth}  ${item.url}`);
 

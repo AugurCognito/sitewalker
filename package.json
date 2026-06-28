@@ -1,6 +1,6 @@
 {
   "name": "sitestash",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Zero-config site mirror: sitemap-first crawl, faithful self-contained pages (JS/SPA aware), offline link rewriting, and a site-map graph.",
   "license": "MIT",
   "author": "Aniket Singh",
@@ -53,6 +53,7 @@
     "pre-push": "pnpm typecheck"
   },
   "dependencies": {
+    "adm-zip": "^0.5.17",
     "cheerio": "^1.0.0",
     "single-file-cli": "^2.0.83",
     "tldts": "^6.1.0",
@@ -60,6 +61,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.4",
+    "@types/adm-zip": "^0.5.8",
     "@types/node": "^22.10.0",
     "@types/turndown": "^5.0.5",
     "simple-git-hooks": "2.12.1",

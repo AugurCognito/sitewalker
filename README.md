@@ -94,7 +94,28 @@ sitestash https://example.com --block-images --concurrency 6
 
 # also emit clean markdown per page (AI reference), and follow subdomains
 sitestash https://example.com --markdown --include-subdomains
+
+# save assets as separate files instead of inlining them
+sitestash https://example.com --assets external
 ```
+
+### Asset modes
+
+By default each page is **one self-contained `.html`** with every asset inlined
+(`--assets embed`). Pass `--assets external` to instead save each page into its own
+directory as an `index.html` alongside its separate asset files (CSS, fonts, images):
+
+```
+output/example.com/
+  about.html                 # --assets embed (default): everything inlined
+  about/index.html           # --assets external: page + sibling assets
+  about/stylesheet_0.css
+  about/fonts/0.woff2
+```
+
+External mode keeps assets per-page (no cross-page deduplication yet), trading some
+duplication for editable, separately-served files — handy when a rebuild team wants to
+lift a stylesheet or font straight out of the snapshot.
 
 Run `sitestash --help` for all options. During development, `pnpm dev <url> [opts]`
 (pnpm forwards args directly — no `--` separator needed).
@@ -126,8 +147,11 @@ Git hooks are installed on `pnpm install`: **pre-commit** runs Biome on staged f
   migration reference needs). For interactive replay of complex SPAs, use
   [Browsertrix](https://github.com/webrecorder/browsertrix-crawler) (WARC/WACZ).
 - **Concurrency spawns one browser per worker.** Lower `--concurrency` on constrained machines.
-- Only `<a href>` links are rewritten for offline use; assets are already inlined, so they
-  need no rewriting.
+- Only `<a href>` links are rewritten for offline use; assets are either inlined
+  (`--assets embed`) or saved with local relative paths by SingleFile (`--assets external`),
+  so they need no rewriting either way.
+- **`--assets external` duplicates shared assets across pages.** A stylesheet used by every
+  page is saved once per page directory (no cross-page deduplication yet).
 
 ## Testing
 

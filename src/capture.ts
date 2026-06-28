@@ -1,9 +1,13 @@
 import { spawn } from 'node:child_process';
-import { mkdir, stat } from 'node:fs/promises';
+import { mkdir, rm, stat } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import AdmZip from 'adm-zip';
 
 const require = createRequire(import.meta.url);
+
+/** Temp archive name single-file writes to before we unzip it (external mode). */
+const CAPTURE_ZIP = '_sitestash-capture.zip';
 
 /** Resolve the single-file-cli node entry point from our dependencies. */
 function singleFileEntry(): string {
@@ -18,21 +22,29 @@ export interface CaptureOptions {
   loadMaxTime: number;
   /** Skip images (faster, smaller files). */
   blockImages: boolean;
+  /** Save assets as separate sibling files (one dir per page) instead of inlining them. */
+  externalAssets: boolean;
   /** Extra raw flags passed through to single-file-cli. */
   extraArgs: string[];
 }
 
 export type CaptureResult = { ok: true } | { ok: false; error: string };
 
-function runSingleFile(url: string, outFile: string, opts: CaptureOptions): Promise<string | null> {
+function runSingleFile(
+  url: string,
+  outPath: string,
+  opts: CaptureOptions,
+  extra: string[],
+): Promise<string | null> {
   const args = [
     singleFileEntry(),
     url,
-    outFile,
+    outPath,
     `--browser-wait-until=${opts.waitUntil}`,
     `--browser-load-max-time=${opts.loadMaxTime}`,
     '--filename-conflict-action=overwrite',
     ...(opts.blockImages ? ['--block-images'] : []),
+    ...extra,
     ...opts.extraArgs,
   ];
   return new Promise((resolve) => {
@@ -47,15 +59,57 @@ function runSingleFile(url: string, outFile: string, opts: CaptureOptions): Prom
 }
 
 /**
- * Capture a single URL as one self-contained .html via single-file-cli.
- *
- * We invoke SingleFile per-page (NOT its --crawl-* mode, which is buggy:
- * shared-browser parallelism throws "Execution context not found" and its
- * link rewriting silently no-ops). One URL in, one fully-inlined file out.
- *
  * SingleFile can exit 0 while producing nothing, so we verify the output file
  * actually exists and is non-trivial — surfacing silent failures instead of
  * hiding them.
+ */
+async function verifyOutput(outFile: string): Promise<CaptureResult> {
+  try {
+    const st = await stat(outFile);
+    if (st.size < 200) return { ok: false, error: `output too small (${st.size} bytes)` };
+  } catch {
+    return { ok: false, error: 'no output file produced' };
+  }
+  return { ok: true };
+}
+
+/**
+ * External-assets capture: SingleFile writes a ZIP (index.html + separate
+ * stylesheet/font/image files referenced by local relative paths); we unzip it
+ * into the page's own directory and drop the archive.
+ */
+async function captureExternal(
+  url: string,
+  outFile: string,
+  opts: CaptureOptions,
+): Promise<CaptureResult> {
+  const dir = path.dirname(outFile);
+  const zipPath = path.join(dir, CAPTURE_ZIP);
+
+  const error = await runSingleFile(url, zipPath, opts, [
+    '--compress-content=true',
+    '--self-extracting-archive=false',
+  ]);
+  if (error) return { ok: false, error };
+
+  try {
+    if ((await stat(zipPath)).size < 200) return { ok: false, error: 'empty archive produced' };
+    new AdmZip(zipPath).extractAllTo(dir, true);
+  } catch (e) {
+    return { ok: false, error: `archive extraction failed: ${e instanceof Error ? e.message : e}` };
+  } finally {
+    await rm(zipPath, { force: true });
+  }
+  return verifyOutput(outFile);
+}
+
+/**
+ * Capture a single URL via single-file-cli.
+ *
+ * We invoke SingleFile per-page (NOT its --crawl-* mode, which is buggy:
+ * shared-browser parallelism throws "Execution context not found" and its
+ * link rewriting silently no-ops). One URL in, one page out — either a single
+ * fully-inlined .html (embedded) or an index.html plus sibling assets (external).
  */
 export async function capturePage(
   url: string,
@@ -64,14 +118,9 @@ export async function capturePage(
 ): Promise<CaptureResult> {
   await mkdir(path.dirname(outFile), { recursive: true });
 
-  const error = await runSingleFile(url, outFile, opts);
-  if (error) return { ok: false, error };
+  if (opts.externalAssets) return captureExternal(url, outFile, opts);
 
-  try {
-    const st = await stat(outFile);
-    if (st.size < 200) return { ok: false, error: `output too small (${st.size} bytes)` };
-  } catch {
-    return { ok: false, error: 'no output file produced' };
-  }
-  return { ok: true };
+  const error = await runSingleFile(url, outFile, opts, []);
+  if (error) return { ok: false, error };
+  return verifyOutput(outFile);
 }

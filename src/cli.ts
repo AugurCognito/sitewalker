@@ -24,6 +24,8 @@ Crawl options:
       --wait-until <s>   Page-ready signal: networkIdle|load|domContentLoaded
                                                    (default: networkIdle)
       --block-images       Skip images (faster, smaller files)
+      --assets <mode>      embed: one self-contained .html per page (default)
+                           external: save assets as separate files (one dir/page)
       --markdown           Also write a clean .md of each page (AI reference)
       --include-subdomains Follow all subdomains (e.g. blog.x.com), not just www
       --serve              Start the viewer server when the crawl finishes
@@ -49,6 +51,7 @@ interface CliValues {
   'max-pages'?: string;
   'wait-until'?: string;
   'block-images'?: boolean;
+  assets?: string;
   markdown?: boolean;
   'include-subdomains'?: boolean;
   serve?: boolean;
@@ -139,10 +142,17 @@ async function runCrawl(target: string, values: CliValues): Promise<void> {
   console.log(`sitestash → ${start.toString()}`);
   console.log(`output    → ${outDir}\n`);
 
+  const assets = values.assets ?? 'embed';
+  if (assets !== 'embed' && assets !== 'external') {
+    console.error(`Invalid --assets: ${assets} (expected "embed" or "external")`);
+    process.exit(1);
+  }
+
   const capture: CaptureOptions = {
     waitUntil: values['wait-until'] ?? 'networkIdle',
     loadMaxTime: 60000,
     blockImages: Boolean(values['block-images']),
+    externalAssets: assets === 'external',
     extraArgs: [],
   };
 
@@ -174,6 +184,7 @@ async function main(): Promise<void> {
       'max-pages': { type: 'string' },
       'wait-until': { type: 'string' },
       'block-images': { type: 'boolean' },
+      assets: { type: 'string' },
       markdown: { type: 'boolean' },
       'include-subdomains': { type: 'boolean' },
       serve: { type: 'boolean' },

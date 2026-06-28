@@ -86,13 +86,21 @@ function sanitizeSegment(seg: string): string {
 
 /**
  * Deterministic URL -> relative file path (posix, forward slashes).
- * Mirrors the site structure under <hostname>/..., always ending in .html.
+ * Mirrors the site structure under <hostname>/...
+ *
+ * Embedded mode (one self-contained file per page) ends every page in .html:
  *   https://x.com/            -> x.com/index.html
  *   https://x.com/about       -> x.com/about.html
  *   https://x.com/a/b/        -> x.com/a/b/index.html
  *   https://x.com/s?q=1       -> x.com/s__q_1.html
+ *
+ * External mode (assets saved as separate sibling files) gives every page its
+ * own directory, so its assets never collide with another page's:
+ *   https://x.com/            -> x.com/index.html
+ *   https://x.com/about       -> x.com/about/index.html
+ *   https://x.com/a/b/        -> x.com/a/b/index.html
  */
-export function urlToRelPath(raw: string): string {
+export function urlToRelPath(raw: string, externalAssets = false): string {
   const u = new URL(raw);
   let pathname: string;
   try {
@@ -105,7 +113,14 @@ export function urlToRelPath(raw: string): string {
   let file = segments.join('/') || 'index';
   if (u.search) file += `__${sanitizeSegment(u.search.slice(1))}`;
   if (!/\.html?$/i.test(file)) file += '.html';
-  return `${sanitizeSegment(u.hostname)}/${file}`;
+  const host = sanitizeSegment(u.hostname);
+
+  // External mode: give each leaf page its own directory so sibling assets never
+  // collide. Directory URLs already map to <dir>/index.html — leave those as-is.
+  if (externalAssets && file !== 'index.html' && !file.endsWith('/index.html')) {
+    return `${host}/${file.replace(/\.html?$/i, '')}/index.html`;
+  }
+  return `${host}/${file}`;
 }
 
 /** Relative href (posix) to navigate from one saved page to another. */

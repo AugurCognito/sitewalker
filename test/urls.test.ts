@@ -63,6 +63,21 @@ describe('urlToRelPath', () => {
   it('encodes the query string into the filename', () => {
     expect(urlToRelPath('https://x.com/search?q=1')).toBe('x.com/search__q_1.html');
   });
+
+  describe('external-assets mode (one directory per leaf page)', () => {
+    it('keeps the homepage at <host>/index.html', () => {
+      expect(urlToRelPath('https://x.com/', true)).toBe('x.com/index.html');
+    });
+    it('gives a leaf page its own directory', () => {
+      expect(urlToRelPath('https://x.com/about', true)).toBe('x.com/about/index.html');
+    });
+    it('leaves directory URLs as <dir>/index.html (no extra nesting)', () => {
+      expect(urlToRelPath('https://x.com/a/b/', true)).toBe('x.com/a/b/index.html');
+    });
+    it('wraps query-string pages too', () => {
+      expect(urlToRelPath('https://x.com/search?q=1', true)).toBe('x.com/search__q_1/index.html');
+    });
+  });
 });
 
 describe('relHref', () => {
