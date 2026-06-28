@@ -75,30 +75,30 @@ describe('relHref', () => {
 });
 
 describe('inScope (default: apex ⇆ www)', () => {
-  const scope = siteScope('https://alvera.ai/', false);
+  const scope = siteScope('https://example.com/', false);
   it('treats apex and www as the same site', () => {
-    expect(inScope('https://alvera.ai/x', scope)).toBe(true);
-    expect(inScope('https://www.alvera.ai/x', scope)).toBe(true);
+    expect(inScope('https://example.com/x', scope)).toBe(true);
+    expect(inScope('https://www.example.com/x', scope)).toBe(true);
   });
   it('excludes other subdomains and other domains', () => {
-    expect(inScope('https://product.alvera.ai/x', scope)).toBe(false);
+    expect(inScope('https://product.example.com/x', scope)).toBe(false);
     expect(inScope('https://other.com/x', scope)).toBe(false);
   });
   it('normalizes a www start host to the apex', () => {
-    const fromWww = siteScope('https://www.alvera.ai/', false);
-    expect(inScope('https://alvera.ai/x', fromWww)).toBe(true);
+    const fromWww = siteScope('https://www.example.com/', false);
+    expect(inScope('https://example.com/x', fromWww)).toBe(true);
   });
 });
 
 describe('inScope (includeSubdomains)', () => {
-  const scope = siteScope('https://alvera.ai/', true);
+  const scope = siteScope('https://example.com/', true);
   it('includes any subdomain of the registrable domain', () => {
-    expect(inScope('https://product.alvera.ai/x', scope)).toBe(true);
-    expect(inScope('https://www.alvera.ai/x', scope)).toBe(true);
-    expect(inScope('https://alvera.ai/x', scope)).toBe(true);
+    expect(inScope('https://product.example.com/x', scope)).toBe(true);
+    expect(inScope('https://www.example.com/x', scope)).toBe(true);
+    expect(inScope('https://example.com/x', scope)).toBe(true);
   });
   it('excludes look-alike domains', () => {
-    expect(inScope('https://notalvera.ai/x', scope)).toBe(false);
-    expect(inScope('https://alvera.ai.evil.com/x', scope)).toBe(false);
+    expect(inScope('https://notexample.com/x', scope)).toBe(false);
+    expect(inScope('https://example.com.evil.com/x', scope)).toBe(false);
   });
 });

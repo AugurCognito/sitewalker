@@ -35,7 +35,7 @@ export function sameHost(target: string, host: string): boolean {
 const stripWww = (host: string): string => host.replace(/^www\./i, '');
 
 export interface SiteScope {
-  /** apex/www-normalized start host, e.g. "alvera.ai". */
+  /** apex/www-normalized start host, e.g. "example.com". */
   base: string;
   includeSubdomains: boolean;
   /** registrable domain (eTLD+1) when following subdomains, else null. */
@@ -54,8 +54,8 @@ export function siteScope(startUrl: string, includeSubdomains: boolean): SiteSco
 
 /**
  * Is `target` part of the site being crawled?
- * Default: same host treating `www.` and the apex as one (e.g. alvera.ai ⇆
- * www.alvera.ai). With includeSubdomains: any host under the registrable domain.
+ * Default: same host treating `www.` and the apex as one (e.g. example.com ⇆
+ * www.example.com). With includeSubdomains: any host under the registrable domain.
  */
 export function inScope(target: string, scope: SiteScope): boolean {
   let host: string;
