@@ -13,14 +13,20 @@ site exactly as it is so the rebuild team has a pixel-faithful, clickable refere
 **static sites and JavaScript/SPA sites alike** (pages are rendered in a real browser before saving).
 
 ```bash
-sitestash https://client-site.com      # crawl → ./output/
-sitestash serve --open                  # browse ./output/ in your browser
+sitestash https://client-site.com      # crawl → ./output/client-site.com/
+sitestash https://another-client.com   # each crawl is kept separately
+sitestash serve --open                  # dashboard of ALL crawls, in your browser
 
 # ./output/
-#   index.html        ← browsable table of contents
-#   site-map.json     ← page graph
-#   client-site.com/… ← one self-contained .html per page
+#   client-site.com/
+#     index.html        ← flat table of contents
+#     site-map.json     ← page graph
+#     client-site.com/… ← one self-contained .html per page
+#   another-client.com/ …
 ```
+
+`sitestash serve` renders a dashboard listing every crawl in the folder, each with a
+collapsible tree of its pages — so old exports stay browsable alongside new ones.
 
 ## How it works
 

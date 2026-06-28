@@ -3,6 +3,7 @@ import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import path from 'node:path';
+import { buildDashboard } from './dashboard.js';
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -48,6 +49,16 @@ async function handleRequest(
   res: ServerResponse,
 ): Promise<void> {
   try {
+    // Root path renders the dynamic dashboard (all crawls present + page tree),
+    // not the static per-crawl index.html (still reachable at /<crawl>/index.html).
+    const reqPath = (req.url ?? '/').split('?')[0];
+    if (reqPath === '/' || reqPath === '') {
+      const html = await buildDashboard(absRoot);
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(html);
+      return;
+    }
+
     const filePath = await resolveFile(absRoot, req.url ?? '/');
     if (!filePath) {
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });

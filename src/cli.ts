@@ -12,8 +12,8 @@ const DEFAULT_OUT = './output';
 const USAGE = `sitestash — mirror a whole site into self-contained, offline-browsable pages.
 
 Usage:
-  sitestash <url> [options]      Crawl a site into ${DEFAULT_OUT}/
-  sitestash serve [dir]          Serve a previous crawl over HTTP (dir: ${DEFAULT_OUT})
+  sitestash <url> [options]      Crawl a site into ${DEFAULT_OUT}/<host>/
+  sitestash serve [dir]          Serve a dashboard of all crawls in dir (default: ${DEFAULT_OUT})
 
 Crawl options:
   -o, --out <dir>        Output directory          (default: ${DEFAULT_OUT})
@@ -33,10 +33,12 @@ Serve options (also apply to --serve):
       --port <n>         Port to listen on         (default: 8080)
       --open             Open the site in your browser
 
-Output:
-  <dir>/<host>/...       one self-contained .html per page (all assets inlined)
-  <dir>/index.html       browsable table of contents
-  <dir>/site-map.json    page graph (urls, files, titles, links, depth)
+Output (per crawl, under ${DEFAULT_OUT}/<host>/ by default):
+  <host>/...             one self-contained .html per page (all assets inlined)
+  index.html             flat table of contents
+  site-map.json          page graph (urls, files, titles, links, depth)
+
+  Then "sitestash serve" shows a dashboard of every crawl with a page tree.
 `;
 
 interface CliValues {
@@ -76,7 +78,7 @@ async function startViewer(dir: string, portStr: string | undefined, open: boole
   try {
     const handle = await serve(resolved, port);
     console.log(`\nServing ${resolved}`);
-    console.log(`→ ${handle.url}index.html   (Ctrl+C to stop)`);
+    console.log(`→ ${handle.url}   (Ctrl+C to stop)`);
     if (open) openBrowser(handle.url);
     // Foreground process: the listening socket keeps it alive; Ctrl+C stops it.
     process.once('SIGINT', () => {
@@ -114,17 +116,22 @@ async function reportAndServe(
   console.log(`\nDone: ${ok} pages${failed ? `, ${failed} errors` : ''} in ${secs}s`);
 
   if (values.serve) {
-    await startViewer(outDir, values.port, Boolean(values.open));
+    // Serve the parent so the dashboard lists every crawl (unless --out was set).
+    await startViewer(values.out ?? DEFAULT_OUT, values.port, Boolean(values.open));
     return;
   }
   console.log(`Open ${path.join(outDir, 'index.html')}`);
-  console.log(`Or run: sitestash serve ${path.relative(process.cwd(), outDir) || '.'} --open`);
+  const serveTarget = values.out ? ` ${values.out}` : '';
+  console.log(`Or run: sitestash serve${serveTarget} --open`);
   if (failed) process.exitCode = 1;
 }
 
 async function runCrawl(target: string, values: CliValues): Promise<void> {
   const start = parseStartUrl(target);
-  const outDir = path.resolve(values.out ?? DEFAULT_OUT);
+  // Default: namespace each crawl under output/<host> so crawls accumulate and
+  // `sitestash serve` can show them all. An explicit --out is used verbatim.
+  const hostFolder = start.hostname.replace(/^www\./i, '');
+  const outDir = values.out ? path.resolve(values.out) : path.resolve(DEFAULT_OUT, hostFolder);
   await mkdir(outDir, { recursive: true });
 
   const startedAt = Date.now();
@@ -169,7 +176,6 @@ async function main(): Promise<void> {
       'block-images': { type: 'boolean' },
       markdown: { type: 'boolean' },
       'include-subdomains': { type: 'boolean' },
-      'shared-browser': { type: 'boolean' },
       serve: { type: 'boolean' },
       port: { type: 'string' },
       open: { type: 'boolean' },

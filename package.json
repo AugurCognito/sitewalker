@@ -1,6 +1,6 @@
 {
   "name": "sitestash",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Zero-config site mirror: sitemap-first crawl, faithful self-contained pages (JS/SPA aware), offline link rewriting, and a site-map graph.",
   "license": "MIT",
   "author": "Aniket Singh",
